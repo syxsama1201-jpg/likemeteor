@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Like Meteor</title>
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --board-bg: #111111;
+    --card-bg: #121212;
+    --text-primary: #ffffff;
+    --text-secondary: #aaaaaa;
+    --border: rgba(255,255,255,0.08);
+    --danger: #ff4d4d;
+    --success: #4ade80;
+  }
+
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: var(--bg);
+    color: var(--text-primary);
+    padding: 24px;
+    min-height: 100vh;
+    overflow: hidden;
+  }
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 28px;
+  }
+
+  .header h1 {
+    font-size: 28px;
+    font-weight: 600;
+    letter-spacing: -0.6px;
+    color: var(--text-primary);
+  }
+
+  .header-actions {
+    display: flex;
+    gap: 12px;
+  }
+
+  .btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.25s ease;
+  }
+
+  .btn-primary {
+    background: #ffffff;
+    color: #0a0a0a;
+    font-weight: 600;
+  }
+
+  .btn-primary:hover {
+    background: #f0f0f0;
+    transform: translateY(-1px);
+  }
+
+  .btn-secondary {
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+  }
+
+  .btn-secondary:hover {
+    background: rgba(255,255,255,0.06);
+    color: var(--text-primary);
+    border-color: rgba(255,255,255,0.2);
+  }
+
+  /* 看板 */
+  .board {
+    display: flex;
+    gap: 20px;
+    height: calc(100vh - 120px);
+    overflow-x: auto;
+    padding-bottom: 20px;
+  }
+
+  .column {
+    flex: 1;
+    min-width: 280px;
+    background: var(--board-bg);
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--border);
+  }
+
+  .column h3 {
+    margin-bottom: 18px;
+    text-align: center;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+  }
+
+  .cards-container {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-right: 4px;
+  }
+
+  .add-btn {
+    width: 100%;
+    padding: 14px;
+    background: transparent;
+    border: 1px dashed var(--border);
+    color: var(--text-secondary);
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 15px;
+    margin-top: 8px;
+    transition: all 0.25s ease;
+  }
+
+  .add-btn:hover {
+    background: rgba(255,255,255,0.04);
+    color: var(--text-primary);
+    border-color: rgba(255,255,255,0.25);
+  }
+
+  /* 带淡光的卡片 */
+  .card {
+    background: var(--card-bg);
+    border-radius: 10px;
+    padding: 16px;
+    border: 1px solid var(--border);
+    
+    /* 淡光效果 */
+    box-shadow: 
+      0 0 15px rgba(255,255,255,0.08),
+      0 0 35px rgba(255,255,255,0.05),
+      0 10px 30px rgba(0,0,0,0.6);
+
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .card:hover {
+    border-color: rgba(255,255,255,0.18);
+    transform: translateY(-4px);
+    
+    /* hover 时增强淡光 */
+    box-shadow: 
+      0 0 25px rgba(255,255,255,0.18),
+      0 0 55px rgba(255,255,255,0.08),
+      0 20px 45px rgba(0,0,0,0.75);
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .drag-handle {
+    cursor: grab;
+    color: #666666;
+    font-size: 20px;
+    user-select: none;
+    padding: 0 4px;
+  }
+
+  .title-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    font-size: 15.5px;
+    font-weight: 500;
+    outline: none;
+  }
+
+  .content-input {
+    display: none;
+    width: 100%;
+    min-height: 88px;
+    background: #1a1a1a;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+    color: var(--text-primary);
+    font-size: 14px;
+    resize: vertical;
+    font-family: inherit;
+    margin-top: 4px;
+  }
+
+  [data-col="Details"] .content-input {
+    display: block;
+  }
+
+  .actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 14px;
+  }
+
+  .action-btn {
+    padding: 7px 16px;
+    border: none;
+    border-radius: 7px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .action-btn.archive {
+    background: rgba(74, 222, 128, 0.1);
+    color: var(--success);
+  }
+
+  .action-btn.complete {
+    background: rgba(255, 77, 77, 0.1);
+    color: var(--danger);
+  }
+
+  .action-btn:hover {
+    opacity: 0.9;
+    transform: scale(1.03);
+  }
+
+  /* 归档视图 */
+  #archive-view {
+    display: none;
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 28px;
+    border: 1px solid var(--border);
+    height: calc(100vh - 120px);
+    overflow-y: auto;
+    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.7);
+  }
+
+  .archive-item {
+    border-bottom: 1px solid var(--border);
+    padding: 24px 0;
+  }
+
+  .archive-item:last-child {
+    border-bottom: none;
+  }
+
+  .archive-item h4 {
+    font-size: 16.5px;
+    margin-bottom: 10px;
+    color: var(--text-primary);
+  }
+
+  .archive-item p {
+    color: var(--text-secondary);
+    font-size: 14.2px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+  }
+
+  .archive-meta {
+    margin-top: 12px;
+    font-size: 12.8px;
+    color: #666666;
+  }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+</head>
+<body>
+
+<div class="header">
+  <h1 id="page-title">Like Meteor</h1>
+  <div class="header-actions">
+    <input type="file" id="import-input" style="display: none;" accept=".json" onchange="importData(event)">
+    <button class="btn btn-secondary" onclick="triggerImport()">导入备份</button>
+    <button class="btn btn-secondary" onclick="exportData()">导出备份</button>
+    <button class="btn btn-primary" id="toggle-view-btn" onclick="toggleView()">已归档任务</button>
+  </div>
+</div>
+
+<div class="board" id="board-view"></div>
+
+<div id="archive-view">
+  <div id="archive-list"></div>
+</div>
+
+<script>
+  const COLUMNS = ['List', 'Pending', 'Team', 'Ider', 'Details'];
+  let tasks = JSON.parse(localStorage.getItem('kanban_data')) || [];
+  let archivedTasks = JSON.parse(localStorage.getItem('kanban_archived_data')) || [];
+  let isShowingArchive = false;
+
+  // 新增：记录每张卡片进入 Details 之前所在的栏目
+  let previousColumns = {};   // { taskId: "Pending" 或 "List" 等 }
+
+  function generateId() { 
+    return Date.now().toString() + Math.floor(Math.random() * 1000).toString(); 
+  }
+
+  function saveData() {
+    localStorage.setItem('kanban_data', JSON.stringify(tasks));
+    localStorage.setItem('kanban_archived_data', JSON.stringify(archivedTasks));
+  }
+
+  // ==================== 核心功能：Details 栏永远只保留一张卡片 ====================
+  function ensureOnlyOneInDetails(newTaskId, newColumn) {
+    if (newColumn !== 'Details') return;
+
+    // 找出当前已经在 Details 中的卡片（不包括刚进入的这张）
+    const currentInDetails = tasks.filter(t => t.column === 'Details' && t.id !== newTaskId);
+
+    currentInDetails.forEach(oldTask => {
+      // 恢复到它之前记录的栏目，如果没有记录则默认回到 List
+      const restoreTo = previousColumns[oldTask.id] || 'List';
+      oldTask.column = restoreTo;
+      delete previousColumns[oldTask.id]; // 清理记录
+    });
+  }
+
+  function recordPreviousColumn(taskId, currentColumn) {
+    if (currentColumn !== 'Details') {
+      previousColumns[taskId] = currentColumn;
+    }
+  }
+
+  // ==================== 修改后的渲染函数 ====================
+  function renderBoard() {
+    const boardEl = document.getElementById('board-view');
+    boardEl.innerHTML = '';
+
+    COLUMNS.forEach(colName => {
+      const colEl = document.createElement('div');
+      colEl.className = 'column';
+      colEl.dataset.col = colName;
+      colEl.innerHTML = `
+        <h3>${colName}</h3>
+        <div class="cards-container" id="container-${colName}"></div>
+        <button class="add-btn" onclick="addTask('${colName}')">+ 添加任务</button>
+      `;
+      boardEl.appendChild(colEl);
+
+      const containerEl = colEl.querySelector('.cards-container');
+
+      // 渲染属于该栏目的卡片
+      tasks.filter(t => t.column === colName).forEach(task => {
+        containerEl.appendChild(createCardElement(task));
+      });
+
+      // Sortable 配置（重点修改 onEnd）
+      new Sortable(containerEl, {
+        group: 'kanban',
+        handle: '.drag-handle',
+        animation: 180,
+        onEnd: function (evt) {
+          const taskId = evt.item.dataset.id;
+          const newColName = evt.to.closest('.column').dataset.col;
+          const task = tasks.find(t => t.id === taskId);
+
+          if (task) {
+            const oldColumn = task.column;        // 拖动前的栏目
+            task.column = newColName;
+
+            // 记录拖动前的位置（用于以后从 Details 踢出时恢复）
+            recordPreviousColumn(taskId, oldColumn);
+
+            // 如果拖入的是 Details，确保只有一张
+            ensureOnlyOneInDetails(taskId, newColName);
+
+            saveData();
+            renderBoard();   // 重新渲染以显示变化
+          }
+        }
+      });
+    });
+  }
+
+  function createCardElement(task) {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.dataset.id = task.id;
+    card.innerHTML = `
+      <div class="card-header">
+        <span class="drag-handle">≡</span>
+        <input type="text" class="title-input" value="${task.title || ''}" maxlength="16" placeholder="输入标题（限16字）">
+      </div>
+      <textarea class="content-input" placeholder="输入详细内容...">${task.content || ''}</textarea>
+      <div class="actions">
+        <button class="action-btn archive">归档</button>
+        <button class="action-btn complete">删除</button>
+      </div>
+    `;
+
+    card.querySelector('.title-input').addEventListener('input', (e) => { 
+      task.title = e.target.value; 
+      saveData(); 
+    });
+    
+    card.querySelector('.content-input').addEventListener('input', (e) => { 
+      task.content = e.target.value; 
+      saveData(); 
+    });
+    
+    card.querySelector('.complete').addEventListener('click', () => removeTask(task.id));
+    card.querySelector('.archive').addEventListener('click', () => archiveTask(task.id));
+
+    return card;
+  }
+
+  function addTask(columnName) {
+    const newTask = { 
+      id: generateId(), 
+      title: '', 
+      content: '', 
+      column: columnName 
+    };
+    
+    tasks.push(newTask);
+    
+    // 如果是直接添加到 Details，也要处理“只保留一张”的逻辑
+    if (columnName === 'Details') {
+      ensureOnlyOneInDetails(newTask.id, 'Details');
+    } else {
+      recordPreviousColumn(newTask.id, columnName);
+    }
+
+    saveData();
+    renderBoard();
+  }
+
+  function removeTask(taskId) {
+    tasks = tasks.filter(t => t.id !== taskId);
+    delete previousColumns[taskId];
+    saveData();
+    renderBoard();
+  }
+
+  function archiveTask(taskId) {
+    const taskIndex = tasks.findIndex(t => t.id === taskId);
+    if (taskIndex > -1) {
+      const taskToArchive = tasks[taskIndex];
+      taskToArchive.archivedAt = new Date().toLocaleString('zh-CN');
+      archivedTasks.push(taskToArchive);
+      tasks.splice(taskIndex, 1);
+      delete previousColumns[taskId];
+      saveData();
+      renderBoard();
+    }
+  }
+
+  function renderArchive() {
+    const archiveList = document.getElementById('archive-list');
+    archiveList.innerHTML = '';
+    
+    if (archivedTasks.length === 0) {
+      archiveList.innerHTML = '<p style="text-align:center; color:#666666; margin-top:100px; font-size:15px;">暂无已归档任务</p>';
+      return;
+    }
+
+    [...archivedTasks].reverse().forEach(task => {
+      const item = document.createElement('div');
+      item.className = 'archive-item';
+      item.innerHTML = `
+        <h4>${task.title || '无标题任务'}</h4>
+        <p>${task.content || '无详细内容'}</p>
+        <div class="archive-meta">
+          归档时间: ${task.archivedAt} | 来源栏目: ${task.column}
+        </div>
+      `;
+      archiveList.appendChild(item);
+    });
+  }
+
+  function toggleView() {
+    isShowingArchive = !isShowingArchive;
+    const boardView = document.getElementById('board-view');
+    const archiveView = document.getElementById('archive-view');
+    const btn = document.getElementById('toggle-view-btn');
+    const title = document.getElementById('page-title');
+
+    if (isShowingArchive) {
+      boardView.style.display = 'none';
+      archiveView.style.display = 'block';
+      btn.textContent = '返回看板';
+      title.textContent = '已归档任务';
+      renderArchive();
+    } else {
+      boardView.style.display = 'flex';
+      archiveView.style.display = 'none';
+      btn.textContent = '已归档任务';
+      title.textContent = 'Like Meteor';
+    }
+  }
+
+  function exportData() {
+    const dataObj = { 
+      kanban_data: tasks, 
+      kanban_archived_data: archivedTasks,
+      previousColumns: previousColumns   // 备份位置记录
+    };
+    const dataStr = JSON.stringify(dataObj, null, 2);
+    const blob = new Blob([dataStr], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const dateStr = new Date().toISOString().slice(0, 10);
+    a.download = `看板备份_${dateStr}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function triggerImport() {
+    document.getElementById('import-input').click();
+  }
+
+  function importData(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        const importedData = JSON.parse(e.target.result);
+        if (importedData.kanban_data !== undefined) {
+          tasks = importedData.kanban_data || [];
+          archivedTasks = importedData.kanban_archived_data || [];
+          previousColumns = importedData.previousColumns || {};
+          saveData();
+          renderBoard();
+          if (isShowingArchive) renderArchive();
+          alert("数据导入成功！");
+        } else {
+          alert("导入失败：文件格式不正确");
+        }
+      } catch (error) {
+        alert("导入失败：无法解析文件");
+      }
+      event.target.value = '';
+    };
+    reader.readAsText(file);
+  }
+
+  // 初始化
+  renderBoard();
+</script>
+</body>
+</html>
