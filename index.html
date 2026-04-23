@@ -102,17 +102,17 @@
     transition: flex 0.3s ease;
   }
 
-  /* 栏目宽度比例分配 */
+  /* 栏目宽度比例分配: 1:1:1:2 (即 20%, 20%, 20%, 40%) */
   .column[data-col="List"], 
   .column[data-col="Pending"], 
   .column[data-col="Team"] {
-    flex: 1; /* 占 20% (1/5) */
-    min-width: 200px;
+    flex: 1;
+    min-width: 220px;
   }
 
   .column[data-col="Idea"] {
-    flex: 2; /* 占 40% (2/5) */
-    min-width: 300px;
+    flex: 2;
+    min-width: 350px;
   }
 
   .column h3 {
@@ -162,7 +162,7 @@
     box-shadow: 
       0 0 15px rgba(255,255,255,0.05),
       0 10px 30px rgba(0,0,0,0.5);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.3s ease;
     position: relative;
   }
 
@@ -204,23 +204,29 @@
 
   .card.expanded .content-wrapper {
     margin-top: 12px;
-    /* 最长不超过两倍高度，通过 JS 动态计算并配合这里的 max-height 限制 */
-    max-height: 200px; 
+    max-height: 1000px; /* 足够大以容纳手动拉伸后的内容 */
   }
 
   .content-input {
     width: 100%;
-    min-height: 80px;
+    min-height: 88px;
+    max-height: 440px; /* 限制自适应最大高度为 5 倍 (88 * 5) */
     background: #1a1a1a;
     border: 1px solid var(--border);
     border-radius: 8px;
     padding: 10px;
     color: var(--text-primary);
     font-size: 13.5px;
-    resize: none;
+    resize: vertical; /* 允许手动垂直拉伸高度 */
     font-family: inherit;
     line-height: 1.5;
     outline: none;
+    display: block;
+  }
+
+  /* 默认隐藏，展开时显示 */
+  .card:not(.expanded) .content-wrapper {
+    display: none;
   }
 
   .actions {
@@ -292,7 +298,7 @@
     color: #555;
   }
 
-  /* 滚动条美化 */
+  /* 滚动条 */
   ::-webkit-scrollbar { width: 5px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
@@ -343,7 +349,7 @@
       colEl.innerHTML = `
         <h3>${colName}</h3>
         <div class="cards-container" id="container-${colName}"></div>
-        <button class="add-btn" onclick="addTask('${colName}')">A Nwe Work</button>
+        <button class="add-btn" onclick="addTask('${colName}')">A New Work</button>
       `;
       boardEl.appendChild(colEl);
 
@@ -391,29 +397,28 @@
     `;
 
     const toggleBtn = card.querySelector('.toggle');
-    const contentWrapper = card.querySelector('.content-wrapper');
     const contentInput = card.querySelector('.content-input');
 
-    // 详情/收起切换逻辑
+    // 自适应高度函数，最大限制为 440px (5倍)
+    const autoResize = () => {
+      contentInput.style.height = 'auto';
+      const newHeight = Math.min(contentInput.scrollHeight, 440);
+      contentInput.style.height = newHeight + 'px';
+    };
+
     toggleBtn.addEventListener('click', () => {
       const isExpanded = card.classList.toggle('expanded');
       task.isExpanded = isExpanded;
       toggleBtn.textContent = isExpanded ? '收起' : '详情';
-      
       if (isExpanded) {
-        // 自适应高度计算，限制最大高度
-        contentWrapper.style.maxHeight = Math.min(contentInput.scrollHeight, 180) + 'px';
-      } else {
-        contentWrapper.style.maxHeight = '0';
+        autoResize();
       }
       saveData();
     });
 
-    // 自动高度校准
+    // 初始化展开状态下的高度
     if (task.isExpanded) {
-      setTimeout(() => {
-        contentWrapper.style.maxHeight = Math.min(contentInput.scrollHeight, 180) + 'px';
-      }, 0);
+      setTimeout(autoResize, 0);
     }
 
     card.querySelector('.title-input').addEventListener('input', (e) => { 
@@ -424,9 +429,8 @@
     contentInput.addEventListener('input', (e) => { 
       task.content = e.target.value; 
       saveData();
-      if (card.classList.contains('expanded')) {
-        contentWrapper.style.maxHeight = Math.min(contentInput.scrollHeight, 180) + 'px';
-      }
+      // 只有在没有手动大幅度调整高度时才进行自适应校准
+      autoResize();
     });
     
     card.querySelector('.complete').addEventListener('click', () => {
@@ -455,7 +459,7 @@
   function renderArchive() {
     const archiveList = document.getElementById('archive-list');
     archiveList.innerHTML = archivedTasks.length === 0 ? 
-      '<p style="text-align:center; color:#444; margin-top:100px;">暂无数据</p>' : '';
+      '<p style="text-align:center; color:#444; margin-top:100px;">暂无归档数据</p>' : '';
 
     [...archivedTasks].reverse().forEach(task => {
       const item = document.createElement('div');
