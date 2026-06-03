@@ -1,511 +1,165 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<title>Like Meteor</title>
-<style>
-  :root {
-    --bg: #0a0a0a;
-    --board-bg: #111111;
-    --card-bg: #121212;
-    --text-primary: #ffffff;
-    --text-secondary: #aaaaaa;
-    --border: rgba(255,255,255,0.08);
-    --danger: #ff4d4d;
-    --success: #4ade80;
-    --accent: #ffffff;
-  }
-
-  * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-  }
-
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    background-color: var(--bg);
-    color: var(--text-primary);
-    padding: 24px;
-    min-height: 100vh;
-    overflow: hidden;
-  }
-
-  .header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 28px;
-  }
-
-  .header h1 {
-    font-size: 28px;
-    font-weight: 600;
-    letter-spacing: -0.6px;
-    color: var(--text-primary);
-  }
-
-  .header-actions {
-    display: flex;
-    gap: 12px;
-  }
-
-  .btn {
-    padding: 10px 20px;
-    border: none;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.25s ease;
-  }
-
-  .btn-primary {
-    background: var(--accent);
-    color: #0a0a0a;
-    font-weight: 600;
-  }
-
-  .btn-primary:hover {
-    background: #f0f0f0;
-    transform: translateY(-1px);
-  }
-
-  .btn-secondary {
-    background: transparent;
-    color: var(--text-secondary);
-    border: 1px solid var(--border);
-  }
-
-  .btn-secondary:hover {
-    background: rgba(255,255,255,0.06);
-    color: var(--text-primary);
-    border-color: rgba(255,255,255,0.2);
-  }
-
-  /* 看板布局 */
-  .board {
-    display: flex;
-    gap: 20px;
-    height: calc(100vh - 120px);
-    overflow-x: auto;
-    padding-bottom: 20px;
-  }
-
-  .column {
-    background: var(--board-bg);
-    border-radius: 12px;
-    padding: 16px;
-    display: flex;
-    flex-direction: column;
-    border: 1px solid var(--border);
-    transition: flex 0.3s ease;
-  }
-
-  /* 栏目宽度比例分配: 1:1:1:2 (即 20%, 20%, 20%, 40%) */
-  .column[data-col="List"], 
-  .column[data-col="Pending"], 
-  .column[data-col="Team"] {
-    flex: 1;
-    min-width: 220px;
-  }
-
-  .column[data-col="Idea"] {
-    flex: 2;
-    min-width: 350px;
-  }
-
-  .column h3 {
-    margin-bottom: 18px;
-    text-align: center;
-    font-size: 13px;
-    font-weight: 600;
-    letter-spacing: 1.5px;
-    color: var(--text-secondary);
-    text-transform: uppercase;
-  }
-
-  .cards-container {
-    flex: 1;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    padding-right: 4px;
-  }
-
-  .add-btn {
-    width: 100%;
-    padding: 12px;
-    background: transparent;
-    border: 1px dashed var(--border);
-    color: var(--text-secondary);
-    border-radius: 10px;
-    cursor: pointer;
-    font-size: 14px;
-    margin-top: 8px;
-    transition: all 0.25s ease;
-  }
-
-  .add-btn:hover {
-    background: rgba(255,255,255,0.04);
-    color: var(--text-primary);
-    border-color: rgba(255,255,255,0.25);
-  }
-
-  /* 卡片样式 */
-  .card {
-    background: var(--card-bg);
-    border-radius: 10px;
-    padding: 14px;
-    border: 1px solid var(--border);
-    box-shadow: 
-      0 0 15px rgba(255,255,255,0.05),
-      0 10px 30px rgba(0,0,0,0.5);
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.3s ease;
-    position: relative;
-  }
-
-  .card:hover {
-    border-color: rgba(255,255,255,0.15);
-    transform: translateY(-2px);
-    box-shadow: 0 0 20px rgba(255,255,255,0.1);
-  }
-
-  .card-header {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .drag-handle {
-    cursor: grab;
-    color: #444;
-    font-size: 18px;
-    user-select: none;
-  }
-
-  .title-input {
-    flex: 1;
-    background: transparent;
-    border: none;
-    color: var(--text-primary);
-    font-size: 15px;
-    font-weight: 500;
-    outline: none;
-  }
-
-  /* 详情内容区域 */
-  .content-wrapper {
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height 0.3s ease, margin-top 0.3s ease;
-  }
-
-  .card.expanded .content-wrapper {
-    margin-top: 12px;
-    max-height: 1000px; /* 足够大以容纳手动拉伸后的内容 */
-  }
-
-  .content-input {
-    width: 100%;
-    min-height: 88px;
-    max-height: 440px; /* 限制自适应最大高度为 5 倍 (88 * 5) */
-    background: #1a1a1a;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 10px;
-    color: var(--text-primary);
-    font-size: 13.5px;
-    resize: vertical; /* 允许手动垂直拉伸高度 */
-    font-family: inherit;
-    line-height: 1.5;
-    outline: none;
-    display: block;
-  }
-
-  /* 默认隐藏，展开时显示 */
-  .card:not(.expanded) .content-wrapper {
-    display: none;
-  }
-
-  .actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 8px;
-    margin-top: 12px;
-  }
-
-  .action-btn {
-    padding: 6px 12px;
-    border: none;
-    border-radius: 6px;
-    font-size: 12px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
-
-  .action-btn.toggle {
-    background: rgba(255, 255, 255, 0.05);
-    color: var(--text-secondary);
-  }
-
-  .action-btn.archive {
-    background: rgba(74, 222, 128, 0.08);
-    color: var(--success);
-  }
-
-  .action-btn.complete {
-    background: rgba(255, 77, 77, 0.08);
-    color: var(--danger);
-  }
-
-  .action-btn:hover {
-    transform: scale(1.05);
-    filter: brightness(1.2);
-  }
-
-  /* 归档页 */
-  #archive-view {
-    display: none;
-    background: var(--card-bg);
-    border-radius: 12px;
-    padding: 24px;
-    border: 1px solid var(--border);
-    height: calc(100vh - 120px);
-    overflow-y: auto;
-  }
-
-  .archive-item {
-    border-bottom: 1px solid var(--border);
-    padding: 20px 0;
-  }
-
-  .archive-item h4 {
-    margin-bottom: 8px;
-  }
-
-  .archive-item p {
-    color: var(--text-secondary);
-    font-size: 14px;
-    white-space: pre-wrap;
-  }
-
-  .archive-meta {
-    margin-top: 10px;
-    font-size: 12px;
-    color: #555;
-  }
-
-  /* 滚动条 */
-  ::-webkit-scrollbar { width: 5px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
-</style>
-<script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>即时销售报告 - 控制面板</title>
+    <link rel="stylesheet" href="css/dashboard.css">
 </head>
 <body>
 
-<div class="header">
-  <h1 id="page-title">Like Meteor</h1>
-  <div class="header-actions">
-    <input type="file" id="import-input" style="display: none;" accept=".json" onchange="importData(event)">
-    <button class="btn btn-secondary" onclick="triggerImport()">导入备份</button>
-    <button class="btn btn-secondary" onclick="exportData()">导出备份</button>
-    <button class="btn btn-primary" id="toggle-view-btn" onclick="toggleView()">已归档</button>
-  </div>
-</div>
+    <!-- ===== 登录遮罩层 ===== -->
+    <div id="loginOverlay" class="login-overlay hidden">
+        <div class="login-card">
+            <div class="login-title">即时销售报告</div>
+            <div class="login-subtitle">请输入账号密码登录</div>
+            <input type="text" id="loginUser" class="login-input" placeholder="用户名" autocomplete="username">
+            <input type="password" id="loginPass" class="login-input" placeholder="密码" autocomplete="current-password">
+            <button id="loginBtn" class="login-btn" onclick="doLogin()">登 录</button>
+            <div id="loginError" class="login-error"></div>
+            <div class="login-footer">Acmezone 销售数据看板</div>
+        </div>
+    </div>
 
-<div class="board" id="board-view"></div>
+    <!-- ===== 侧边栏 ===== -->
+    <div class="sidebar">
+        <div class="sidebar-logo"></div>
+        <a class="nav-item" href="index.html">
+            <div class="nav-icon-placeholder"></div>首页
+        </a>
+        <a class="nav-item active" href="index.html">
+            <div class="nav-icon-placeholder" style="background-color:#fff;"></div>销售
+        </a>
+        <a class="nav-item" href="inventory.html">
+            <div class="nav-icon-placeholder"></div>库存
+        </a>
+        <a class="nav-item" href="#">
+            <div class="nav-icon-placeholder"></div>FBA
+        </a>
+        <a class="nav-item" href="#">
+            <div class="nav-icon-placeholder"></div>客服
+        </a>
+        <a class="nav-item" href="#">
+            <div class="nav-icon-placeholder"></div>跟卖
+        </a>
+        <a class="nav-item erp" href="#">
+            <div class="nav-icon-placeholder" style="background-color:#fff;"></div>ERP
+        </a>
+    </div>
 
-<div id="archive-view">
-  <div id="archive-list"></div>
-</div>
+    <!-- ===== 主内容区 ===== -->
+    <div class="main-container">
+        <header class="top-header">
+            <div class="header-tabs">
+                <div class="tab active">即时销售报告<div class="close-icon-placeholder"></div></div>
+            </div>
+            <div class="header-right">
+                <div class="user-avatar-placeholder"></div>
+            </div>
+        </header>
 
-<script>
-  const COLUMNS = ['List', 'Pending', 'Team', 'Idea'];
-  let tasks = JSON.parse(localStorage.getItem('kanban_data')) || [];
-  let archivedTasks = JSON.parse(localStorage.getItem('kanban_archived_data')) || [];
-  let isShowingArchive = false;
+        <main class="content-scrollable">
+            <div class="page-title-row">
+                <div class="title-group">
+                    <h2>即时销售报告<div style="width:16px;height:16px;background:#165dff;border-radius: 2px;display: inline-block;vertical-align: middle;"></div></h2>
+                    <div class="update-time" style="margin-left: 60px;">更新时间
+                        <span id="target-time"></span>
+                    </div>
+                </div>
+            </div>
 
-  function generateId() { 
-    return Date.now().toString() + Math.floor(Math.random() * 1000).toString(); 
-  }
+            <div class="filter-row">
+                <div class="select-placeholder">全部店铺 <div class="arrow-placeholder"></div></div>
+                <div class="select-placeholder">USD 美元($) <div class="arrow-placeholder"></div></div>
+            </div>
 
-  function saveData() {
-    localStorage.setItem('kanban_data', JSON.stringify(tasks));
-    localStorage.setItem('kanban_archived_data', JSON.stringify(archivedTasks));
-  }
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-header">订单量 </div>
+                    <div class="stat-value" id="card-orders-today">--</div>
+                    <div class="stat-footer" id="card-orders-footer"><span>昨日累计 --</span><span class="trend-none">--</span></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-header">销量 </div>
+                    <div class="stat-value" id="card-qty-today">0</div>
+                    <div class="stat-footer" id="card-qty-footer"><span>昨日累计 0</span><span>0.00%</span></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-header">销售额 </div>
+                    <div class="stat-value" id="card-sales-today">$0.00</div>
+                    <div class="stat-footer" id="card-sales-footer"><span>昨日累计 $0.00</span><span>0.00%</span></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-header">订单金额 </div>
+                    <div class="stat-value" id="card-amount-today">$0.00</div>
+                    <div class="stat-footer" id="card-amount-footer"><span>昨日累计 $0.00</span><span>0.00%</span></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-header">平均每单销量 </div>
+                    <div class="stat-value" id="card-avgqty-today">--</div>
+                    <div class="stat-footer" id="card-avgqty-footer"><span>昨日累计 --</span><span class="trend-none">--</span></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-header">平均每单净销售额 </div>
+                    <div class="stat-value" id="card-avgprice-today">$0.00</div>
+                    <div class="stat-footer" id="card-avgprice-footer"><span>昨日累计 $0.00</span><span>0.00%</span></div>
+                </div>
+            </div>
 
-  function renderBoard() {
-    const boardEl = document.getElementById('board-view');
-    boardEl.innerHTML = '';
+            <div class="table-toolbar">
+                <div class="toolbar-left">
+                    <div class="search-group">
+                        <div style="padding: 0 8px; border-right:1px solid #e5e6eb; line-height:22px; width:80px; box-sizing: border-box; text-align: center; color: #4e5969;">ASIN</div>
+                        <input type="text" id="searchInput" placeholder="请输入关键词" oninput="handleSearch(event)" style="padding: 0 8px; border:none; line-height:22px; width:200px; box-sizing: border-box; font-size:10px; color: #1d2129;">
+                    </div>
+                    <div class="seg-control">
+                        <div class="seg-btn" id="btn-parent" onclick="switchView('parent')">父ASIN</div>
+                        <div class="seg-btn active" id="btn-child" onclick="switchView('child')">子ASIN</div>
+                    </div>
+                </div>
+                <div class="toolbar-right" style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #4e5969;">
+                    <span id="toolbar-total-count">共 0 条</span>
+                </div>
+            </div>
 
-    COLUMNS.forEach(colName => {
-      const colEl = document.createElement('div');
-      colEl.className = 'column';
-      colEl.dataset.col = colName;
-      colEl.innerHTML = `
-        <h3>${colName}</h3>
-        <div class="cards-container" id="container-${colName}"></div>
-        <button class="add-btn" onclick="addTask('${colName}')">A New Work</button>
-      `;
-      boardEl.appendChild(colEl);
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th class="col-core1-id">商品名称</th>
+                            <th>产品图</th>
+                            <th class="col-core2-id">父ASIN</th>
+                            <th class="col-core2-id">子ASIN</th>
+                            <th class="col-core2-id">MSKU</th>
+                            <th>目标销量</th>
+                            <th class="sortable" onclick="handleSort('今日销量')">今日销量 <span id="sort-icon-今日销量" class="sort-icon sort-none"></span></th>
+                            <th class="col-core3-id">环比昨日</th>
+                            <th class="sortable" onclick="handleSort('今日销售额')">今日销售额 <span id="sort-icon-今日销售额" class="sort-icon sort-none"></span></th>
+                            <th>今日单价</th>
+                            <th class="sortable" onclick="handleSort('昨日销量')">昨日销量 <span id="sort-icon-昨日销量" class="sort-icon sort-none"></span></th>
+                            <th class="sortable" onclick="handleSort('昨日销售额')">昨日销售额 <span id="sort-icon-昨日销售额" class="sort-icon sort-none"></span></th>
+                            <th>昨日单价</th>
+                            <th>上周同日销量</th>
+                            <th class="sortable" onclick="handleSort('可售库存')">可售库存 <span id="sort-icon-可售库存" class="sort-icon sort-none"></span></th>
+                            <th class="sortable" onclick="handleSort('可售天数')">可售天数 <span id="sort-icon-可售天数" class="sort-icon sort-none"></span></th>
+                            <th class="col-core4-id">大类排名</th>
+                            <th class="col-core4-id">小类排名</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
 
-      const containerEl = colEl.querySelector('.cards-container');
-      tasks.filter(t => t.column === colName).forEach(task => {
-        containerEl.appendChild(createCardElement(task));
-      });
-
-      new Sortable(containerEl, {
-        group: 'kanban',
-        handle: '.drag-handle',
-        animation: 150,
-        onEnd: function (evt) {
-          const taskId = evt.item.dataset.id;
-          const newColName = evt.to.closest('.column').dataset.col;
-          const task = tasks.find(t => t.id === taskId);
-          if (task) {
-            task.column = newColName;
-            saveData();
-          }
-        }
-      });
-    });
-  }
-
-  function createCardElement(task) {
-    const card = document.createElement('div');
-    card.className = 'card';
-    if (task.isExpanded) card.classList.add('expanded');
-    card.dataset.id = task.id;
-
-    card.innerHTML = `
-      <div class="card-header">
-        <span class="drag-handle">≡</span>
-        <input type="text" class="title-input" value="${task.title || ''}" maxlength="16" placeholder="任务标题">
-      </div>
-      <div class="content-wrapper">
-        <textarea class="content-input" placeholder="详细内容...">${task.content || ''}</textarea>
-      </div>
-      <div class="actions">
-        <button class="action-btn toggle">${task.isExpanded ? '收起' : '详情'}</button>
-        <button class="action-btn archive">归档</button>
-        <button class="action-btn complete">删除</button>
-      </div>
-    `;
-
-    const toggleBtn = card.querySelector('.toggle');
-    const contentInput = card.querySelector('.content-input');
-
-    // 自适应高度函数，最大限制为 440px (5倍)
-    const autoResize = () => {
-      contentInput.style.height = 'auto';
-      const newHeight = Math.min(contentInput.scrollHeight, 440);
-      contentInput.style.height = newHeight + 'px';
-    };
-
-    toggleBtn.addEventListener('click', () => {
-      const isExpanded = card.classList.toggle('expanded');
-      task.isExpanded = isExpanded;
-      toggleBtn.textContent = isExpanded ? '收起' : '详情';
-      if (isExpanded) {
-        autoResize();
-      }
-      saveData();
-    });
-
-    // 初始化展开状态下的高度
-    if (task.isExpanded) {
-      setTimeout(autoResize, 0);
-    }
-
-    card.querySelector('.title-input').addEventListener('input', (e) => { 
-      task.title = e.target.value; 
-      saveData(); 
-    });
-    
-    contentInput.addEventListener('input', (e) => { 
-      task.content = e.target.value; 
-      saveData();
-      // 只有在没有手动大幅度调整高度时才进行自适应校准
-      autoResize();
-    });
-    
-    card.querySelector('.complete').addEventListener('click', () => {
-      tasks = tasks.filter(t => t.id !== task.id);
-      saveData();
-      renderBoard();
-    });
-
-    card.querySelector('.archive').addEventListener('click', () => {
-      task.archivedAt = new Date().toLocaleString('zh-CN');
-      archivedTasks.push(task);
-      tasks = tasks.filter(t => t.id !== task.id);
-      saveData();
-      renderBoard();
-    });
-
-    return card;
-  }
-
-  function addTask(columnName) {
-    tasks.push({ id: generateId(), title: '', content: '', column: columnName, isExpanded: false });
-    saveData();
-    renderBoard();
-  }
-
-  function renderArchive() {
-    const archiveList = document.getElementById('archive-list');
-    archiveList.innerHTML = archivedTasks.length === 0 ? 
-      '<p style="text-align:center; color:#444; margin-top:100px;">暂无归档数据</p>' : '';
-
-    [...archivedTasks].reverse().forEach(task => {
-      const item = document.createElement('div');
-      item.className = 'archive-item';
-      item.innerHTML = `
-        <h4>${task.title || '未命名'}</h4>
-        <p>${task.content || '无内容'}</p>
-        <div class="archive-meta">时间: ${task.archivedAt} | 来源: ${task.column}</div>
-      `;
-      archiveList.appendChild(item);
-    });
-  }
-
-  function toggleView() {
-    isShowingArchive = !isShowingArchive;
-    document.getElementById('board-view').style.display = isShowingArchive ? 'none' : 'flex';
-    document.getElementById('archive-view').style.display = isShowingArchive ? 'block' : 'none';
-    document.getElementById('toggle-view-btn').textContent = isShowingArchive ? '返回看板' : '已归档';
-    if (isShowingArchive) renderArchive();
-  }
-
-  function exportData() {
-    const dataStr = JSON.stringify({ tasks, archivedTasks }, null, 2);
-    const blob = new Blob([dataStr], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `Meteor_Backup_${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
-  }
-
-  function triggerImport() { document.getElementById('import-input').click(); }
-
-  function importData(event) {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const imported = JSON.parse(e.target.result);
-      tasks = imported.tasks || [];
-      archivedTasks = imported.archivedTasks || [];
-      saveData();
-      renderBoard();
-    };
-    reader.readAsText(event.target.files[0]);
-  }
-
-  renderBoard();
-</script>
+    <!-- ===== 脚本加载（顺序不能变） ===== -->
+    <script src="js/common.js"></script>
+    <script src="js/sales.js"></script>
+    <script>
+        // 页面加载时启动时间显示
+        window.addEventListener('load', startTimeDisplay);
+    </script>
 </body>
 </html>
