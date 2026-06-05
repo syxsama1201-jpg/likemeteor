@@ -9,19 +9,29 @@
 // ==================== 字段映射配置（按你的飞书表格字段名修改） ====================
 const FIELD_MAP = {
     // 卡片汇总字段
-    '可售库存': '可售库存',
-    '不可售库存': '不可售库存',
-    '在途库存': '在途库存',
-    '预留库存': '预留库存',
-    '库存总额': '库存单价',       // 库存总额 = 可售库存 × 库存单价
+    '包含在途': '包含在途',
+    '不含在途': '不含在途',
+    '海外库存总量': '海外库存总量',
+    '供应商库存总量': '供应商库存总量',
+    '供应商在途总量': '供应商在途总量',
     // 表格显示字段
-    '商品名称': '商品名称',
+    '产品名称': '产品名称',
     '产品图': '产品图',
-    'SKU': 'SKU',
-    'ASIN': 'ASIN',
-    '库龄': '库龄',
-    '周转天数': '周转天数',
-    '最近入库日期': '最近入库日期',
+    '父ASIN': '父ASIN',
+    '子ASIN': '子ASIN',
+    'MSKU': 'MSKU',
+    'FBA库存': 'FBA库存',
+    'FBA在途': 'FBA在途',
+    '西邮库存': '西邮库存',
+    'LNK库存': 'LNK库存',
+    '杰戈工厂库存': '杰戈工厂库存',
+    '惠安工厂库存': '惠安工厂库存',
+    '泉州工厂库存': '泉州工厂库存',
+    '江西工厂库存': '江西工厂库存',
+    '杰戈工厂在途': '杰戈工厂在途',
+    '惠安工厂在途': '惠安工厂在途',
+    '泉州工厂在途': '泉州工厂在途',
+    '江西工厂在途': '江西工厂在途',
 };
 
 // ==================== 库存页全局状态 ====================
@@ -65,7 +75,7 @@ async function fetchInventoryData() {
         if (result.status === 'success') {
             globalRecords = result.data;
             calculateAndRenderCards(globalRecords);
-            handleSort('可售库存');
+            handleSort('海外库存总量');
         } else {
             console.error("获取库存数据失败:", result);
         }
@@ -77,8 +87,8 @@ async function fetchInventoryData() {
 // ==================== 卡片计算与渲染 ====================
 
 function calculateAndRenderCards(records) {
-    let totalSellable = 0, totalUnsellable = 0, totalInbound = 0;
-    let totalReserved = 0, totalValue = 0, skuCount = 0;
+    let totalWithTransit = 0, totalWithoutTransit = 0, totalOverseas = 0;
+    let totalSupplierStock = 0, totalSupplierTransit = 0, skuCount = 0;
     let alertCount = 0;
     const seenSku = new Set();
 
@@ -86,26 +96,26 @@ function calculateAndRenderCards(records) {
         const f = record.fields;
         if (!f || Object.keys(f).length === 0) return;
 
-        const sellable = parseInt(f[FIELD_MAP['可售库存']]) || 0;
-        const unsellable = parseInt(f[FIELD_MAP['不可售库存']]) || 0;
-        const inbound = parseInt(f[FIELD_MAP['在途库存']]) || 0;
-        const reserved = parseInt(f[FIELD_MAP['预留库存']]) || 0;
-        const unitPrice = parseFloat(f[FIELD_MAP['库存总额']]) || 0;
+        const withTransit = parseInt(f[FIELD_MAP['包含在途']]) || 0;
+        const withoutTransit = parseInt(f[FIELD_MAP['不含在途']]) || 0;
+        const overseas = parseInt(f[FIELD_MAP['海外库存总量']]) || 0;
+        const supplierStock = parseInt(f[FIELD_MAP['供应商库存总量']]) || 0;
+        const supplierTransit = parseInt(f[FIELD_MAP['供应商在途总量']]) || 0;
 
-        totalSellable += sellable;
-        totalUnsellable += unsellable;
-        totalInbound += inbound;
-        totalReserved += reserved;
-        totalValue += sellable * unitPrice;
+        totalWithTransit += withTransit;
+        totalWithoutTransit += withoutTransit;
+        totalOverseas += overseas;
+        totalSupplierStock += supplierStock;
+        totalSupplierTransit += supplierTransit;
 
-        const sku = f[FIELD_MAP['SKU']];
+        const sku = f[FIELD_MAP['MSKU']];
         if (sku && !seenSku.has(sku)) {
             seenSku.add(sku);
             skuCount++;
         }
 
-        // 库存预警：可售库存 < 10 且 SKU 存在
-        if (sellable < 10 && sku) {
+        // 库存预警：不含在途库存为 0 且 SKU 存在
+        if (withoutTransit <= 0 && sku) {
             alertCount++;
         }
     });
@@ -113,22 +123,22 @@ function calculateAndRenderCards(records) {
     document.getElementById('card-sku-count').innerText = skuCount.toLocaleString();
     document.getElementById('card-sku-footer').innerHTML = `<span>活跃SKU</span><span>共 ${skuCount} 个</span>`;
 
-    document.getElementById('card-sellable').innerText = totalSellable.toLocaleString();
-    document.getElementById('card-sellable-footer').innerHTML = `<span>可售总量</span><span>${totalSellable.toLocaleString()} 件</span>`;
+    document.getElementById('card-sellable').innerText = totalWithTransit.toLocaleString();
+    document.getElementById('card-sellable-footer').innerHTML = `<span>含在途总量</span><span>${totalWithTransit.toLocaleString()} 件</span>`;
 
-    document.getElementById('card-unsellable').innerText = totalUnsellable.toLocaleString();
-    document.getElementById('card-unsellable-footer').innerHTML = `<span>不可售总量</span><span>${totalUnsellable.toLocaleString()} 件</span>`;
+    document.getElementById('card-unsellable').innerText = totalWithoutTransit.toLocaleString();
+    document.getElementById('card-unsellable-footer').innerHTML = `<span>不含在途总量</span><span>${totalWithoutTransit.toLocaleString()} 件</span>`;
 
-    document.getElementById('card-inbound').innerText = totalInbound.toLocaleString();
-    document.getElementById('card-inbound-footer').innerHTML = `<span>在途总量</span><span>${totalInbound.toLocaleString()} 件</span>`;
+    document.getElementById('card-inbound').innerText = totalOverseas.toLocaleString();
+    document.getElementById('card-inbound-footer').innerHTML = `<span>海外库存总量</span><span>${totalOverseas.toLocaleString()} 件</span>`;
 
-    document.getElementById('card-total-value').innerText = `$${totalValue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-    document.getElementById('card-value-footer').innerHTML = `<span>可售库存估值</span><span class="trend-none">--</span>`;
+    document.getElementById('card-total-value').innerText = totalSupplierStock.toLocaleString();
+    document.getElementById('card-value-footer').innerHTML = `<span>供应商库存总量</span><span>${totalSupplierStock.toLocaleString()} 件</span>`;
 
     document.getElementById('card-alert-count').innerText = alertCount.toLocaleString();
     document.getElementById('card-alert-footer').innerHTML = alertCount > 0
-        ? `<span>低库存商品</span><span class="trend-down">需补货</span>`
-        : `<span>低库存商品</span><span class="trend-up">库存正常</span>`;
+        ? `<span>库存告罄商品</span><span class="trend-down">需补货</span>`
+        : `<span>库存告罄商品</span><span class="trend-up">库存正常</span>`;
 }
 
 // ==================== 搜索 / 排序 ====================
@@ -165,12 +175,14 @@ function applyFilterAndSort() {
     if (currentSearchTerm) {
         processedRecords = processedRecords.filter(record => {
             const f = record.fields;
-            const name = (f[FIELD_MAP['商品名称']] || '').toLowerCase();
-            const sku = (f[FIELD_MAP['SKU']] || '').toLowerCase();
-            const asin = (f[FIELD_MAP['ASIN']] || '').toLowerCase();
+            const name = (f[FIELD_MAP['产品名称']] || '').toLowerCase();
+            const sku = (f[FIELD_MAP['MSKU']] || '').toLowerCase();
+            const asin = (f[FIELD_MAP['子ASIN']] || '').toLowerCase();
+            const parentAsin = (f[FIELD_MAP['父ASIN']] || '').toLowerCase();
             return name.includes(currentSearchTerm)
                 || sku.includes(currentSearchTerm)
-                || asin.includes(currentSearchTerm);
+                || asin.includes(currentSearchTerm)
+                || parentAsin.includes(currentSearchTerm);
         });
     }
 
@@ -211,18 +223,28 @@ function renderTable(records) {
 
         const tr = document.createElement('tr');
         tr.innerHTML = `
-            <td>${f[FIELD_MAP['商品名称']] || '-'}</td>
-            <td>${imgHtml}</td>
-            <td>${f[FIELD_MAP['SKU']] || '-'}</td>
-            <td>${f[FIELD_MAP['ASIN']] || '-'}</td>
-            <td>${f[FIELD_MAP['可售库存']] || '0'}</td>
-            <td>${f[FIELD_MAP['不可售库存']] || '0'}</td>
-            <td>${f[FIELD_MAP['在途库存']] || '0'}</td>
-            <td>${f[FIELD_MAP['预留库存']] || '0'}</td>
-            <td>${f[FIELD_MAP['库龄']] || '-'}</td>
-            <td>${f[FIELD_MAP['周转天数']] || '-'}</td>
-            <td>${f[FIELD_MAP['最近入库日期']] || '-'}</td>
-            <td class="action-link">详情</td>
+            <td class="sticky-col-1">${f[FIELD_MAP['产品名称']] || '-'}</td>
+            <td class="sticky-col-2">${imgHtml}</td>
+            <td>${f[FIELD_MAP['父ASIN']] || '-'}</td>
+            <td>${f[FIELD_MAP['子ASIN']] || '-'}</td>
+            <td>${f[FIELD_MAP['MSKU']] || '-'}</td>
+            <td>${f[FIELD_MAP['包含在途']] || '0'}</td>
+            <td>${f[FIELD_MAP['不含在途']] || '0'}</td>
+            <td>${f[FIELD_MAP['海外库存总量']] || '0'}</td>
+            <td>${f[FIELD_MAP['FBA库存']] || '0'}</td>
+            <td>${f[FIELD_MAP['FBA在途']] || '0'}</td>
+            <td>${f[FIELD_MAP['西邮库存']] || '0'}</td>
+            <td>${f[FIELD_MAP['LNK库存']] || '0'}</td>
+            <td>${f[FIELD_MAP['供应商库存总量']] || '0'}</td>
+            <td>${f[FIELD_MAP['杰戈工厂库存']] || '0'}</td>
+            <td>${f[FIELD_MAP['惠安工厂库存']] || '0'}</td>
+            <td>${f[FIELD_MAP['泉州工厂库存']] || '0'}</td>
+            <td>${f[FIELD_MAP['江西工厂库存']] || '0'}</td>
+            <td>${f[FIELD_MAP['供应商在途总量']] || '0'}</td>
+            <td>${f[FIELD_MAP['杰戈工厂在途']] || '0'}</td>
+            <td>${f[FIELD_MAP['惠安工厂在途']] || '0'}</td>
+            <td>${f[FIELD_MAP['泉州工厂在途']] || '0'}</td>
+            <td>${f[FIELD_MAP['江西工厂在途']] || '0'}</td>
         `;
         tbody.appendChild(tr);
     });
@@ -231,4 +253,35 @@ function renderTable(records) {
     if (window._initColumnResize) {
         window._initColumnResize();
     }
+    // 更新冻结列位置
+    updateStickyColumns();
 }
+
+// ==================== 冻结列位置更新 ====================
+
+/**
+ * 根据第一列（产品名称）的实际宽度动态设置第二列（产品图）的 left 偏移，
+ * 同时同步更新 thead 和 tbody 中所有冻结列的位置。
+ */
+function updateStickyColumns() {
+    // 从第二行 thead 中定位 sticky-col-1（产品名称）
+    const headerStickyCol1 = document.querySelector('thead th.sticky-col-1');
+    if (!headerStickyCol1) return;
+
+    const col1Width = headerStickyCol1.offsetWidth;
+    const leftOffset = col1Width + 'px';
+
+    // 更新 thead 中 sticky-col-2 的 left
+    const headerStickyCol2 = document.querySelector('thead th.sticky-col-2');
+    if (headerStickyCol2) {
+        headerStickyCol2.style.left = leftOffset;
+    }
+
+    // 更新 tbody 中所有 sticky-col-2 的 left
+    document.querySelectorAll('tbody td.sticky-col-2').forEach(function(td) {
+        td.style.left = leftOffset;
+    });
+}
+
+// 注册为全局回调，common.js 在列宽变更后会自动调用
+window._onColumnWidthsChanged = updateStickyColumns;

@@ -199,6 +199,10 @@ window.toggleDropdown = function(event, btn) {
                 widthMap[i] = th.offsetWidth;
             });
             localStorage.setItem(STORAGE_KEY, JSON.stringify(widthMap));
+            // 通知页面列宽已变更（如冻结列需要更新偏移）
+            if (typeof window._onColumnWidthsChanged === 'function') {
+                window._onColumnWidthsChanged();
+            }
         } catch(e) {}
     }
 
@@ -213,6 +217,10 @@ window.toggleDropdown = function(event, btn) {
                 th.dataset.resized = 'true';
             }
         });
+        // 应用已保存宽度后通知页面更新冻结列
+        if (typeof window._onColumnWidthsChanged === 'function') {
+            window._onColumnWidthsChanged();
+        }
     }
 
     function initResizeHandles() {

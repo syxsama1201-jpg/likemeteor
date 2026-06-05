@@ -129,12 +129,17 @@ function handleSort(key) {
 function applyFilterAndSort() {
     let processedRecords = [...globalRecords];
 
-    // 1. 过滤
+    // 1. 关键词过滤：子ASIN、父ASIN、MSKU、产品名称 四个字段同时搜索
     if (currentSearchTerm) {
         processedRecords = processedRecords.filter(record => {
-            const fAsin = (record.fields['父ASIN'] || '').toLowerCase();
-            const cAsin = (record.fields['子ASIN'] || '').toLowerCase();
-            return fAsin.includes(currentSearchTerm) || cAsin.includes(currentSearchTerm);
+            const f = record.fields;
+            const searchFields = [
+                f['子ASIN'],
+                f['父ASIN'],
+                f['MSKU'],
+                f['产品名称']
+            ];
+            return searchFields.some(val => (val || '').toLowerCase().includes(currentSearchTerm));
         });
     }
 
