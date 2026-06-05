@@ -124,18 +124,37 @@
                 <table>
                     <thead>
                         <tr>
-                            <th class="col-core1-id">商品名称</th>
-                            <th>产品图</th>
-                            <th class="col-core2-id">SKU</th>
-                            <th class="col-core2-id">ASIN</th>
-                            <th class="sortable" onclick="handleSort('可售库存')">可售库存 <span id="sort-icon-可售库存" class="sort-icon sort-none"></span></th>
-                            <th class="sortable" onclick="handleSort('不可售库存')">不可售库存 <span id="sort-icon-不可售库存" class="sort-icon sort-none"></span></th>
-                            <th class="sortable" onclick="handleSort('在途库存')">在途库存 <span id="sort-icon-在途库存" class="sort-icon sort-none"></span></th>
-                            <th class="sortable" onclick="handleSort('预留库存')">预留库存 <span id="sort-icon-预留库存" class="sort-icon sort-none"></span></th>
-                            <th>库龄(天)</th>
-                            <th class="sortable" onclick="handleSort('周转天数')">周转天数 <span id="sort-icon-周转天数" class="sort-icon sort-none"></span></th>
-                            <th>最近入库日期</th>
-                            <th>操作</th>
+                            <!-- 第一行：分类 -->
+                            <th colspan="5" class="sticky-row1">产品信息</th>
+                            <th colspan="2">总库存数量</th>
+                            <th colspan="5">海外库存</th>
+                            <th colspan="5">供应商库存</th>
+                            <th colspan="5">供应商在途</th>
+                        </tr>
+                        <tr>
+                            <!-- 第二行：标题（与飞书字段对应） -->
+                            <th class="col-core1-id sticky-col-1">产品名称</th>
+                            <th class="sticky-col-2">产品图</th>
+                            <th class="col-core2-id">父ASIN</th>
+                            <th class="col-core2-id">子ASIN</th>
+                            <th class="col-core2-id">MSKU</th>
+                            <th class="sortable" onclick="handleSort('包含在途')">包含在途 <span id="sort-icon-包含在途" class="sort-icon sort-none"></span></th>
+                            <th class="sortable" onclick="handleSort('不含在途')">不含在途 <span id="sort-icon-不含在途" class="sort-icon sort-none"></span></th>
+                            <th class="sortable" onclick="handleSort('海外库存总量')">海外库存总量 <span id="sort-icon-海外库存总量" class="sort-icon sort-none"></span></th>
+                            <th class="sortable" onclick="handleSort('FBA库存')">FBA库存 <span id="sort-icon-FBA库存" class="sort-icon sort-none"></span></th>
+                            <th class="sortable" onclick="handleSort('FBA在途')">FBA在途 <span id="sort-icon-FBA在途" class="sort-icon sort-none"></span></th>
+                            <th class="sortable" onclick="handleSort('西邮库存')">西邮库存 <span id="sort-icon-西邮库存" class="sort-icon sort-none"></span></th>
+                            <th class="sortable" onclick="handleSort('LNK库存')">LNK库存 <span id="sort-icon-LNK库存" class="sort-icon sort-none"></span></th>
+                            <th class="sortable" onclick="handleSort('供应商库存总量')">供应商库存总量 <span id="sort-icon-供应商库存总量" class="sort-icon sort-none"></span></th>
+                            <th class="sortable" onclick="handleSort('杰戈工厂库存')">杰戈工厂库存 <span id="sort-icon-杰戈工厂库存" class="sort-icon sort-none"></span></th>
+                            <th class="sortable" onclick="handleSort('惠安工厂库存')">惠安工厂库存 <span id="sort-icon-惠安工厂库存" class="sort-icon sort-none"></span></th>
+                            <th class="sortable" onclick="handleSort('泉州工厂库存')">泉州工厂库存 <span id="sort-icon-泉州工厂库存" class="sort-icon sort-none"></span></th>
+                            <th class="sortable" onclick="handleSort('江西工厂库存')">江西工厂库存 <span id="sort-icon-江西工厂库存" class="sort-icon sort-none"></span></th>
+                            <th class="sortable" onclick="handleSort('供应商在途总量')">供应商在途总量 <span id="sort-icon-供应商在途总量" class="sort-icon sort-none"></span></th>
+                            <th class="sortable" onclick="handleSort('杰戈工厂在途')">杰戈工厂在途 <span id="sort-icon-杰戈工厂在途" class="sort-icon sort-none"></span></th>
+                            <th class="sortable" onclick="handleSort('惠安工厂在途')">惠安工厂在途 <span id="sort-icon-惠安工厂在途" class="sort-icon sort-none"></span></th>
+                            <th class="sortable" onclick="handleSort('泉州工厂在途')">泉州工厂在途 <span id="sort-icon-泉州工厂在途" class="sort-icon sort-none"></span></th>
+                            <th class="sortable" onclick="handleSort('江西工厂在途')">江西工厂在途 <span id="sort-icon-江西工厂在途" class="sort-icon sort-none"></span></th>
                         </tr>
                     </thead>
                     <tbody>
